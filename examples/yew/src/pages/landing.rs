@@ -533,6 +533,7 @@ pub fn example14() -> Html {
             data={data}
             columns={columns}
             row_end_component={row_end_component}
+            default_sort_column={Some("Name")}
         />
     }
 }
@@ -1183,6 +1184,7 @@ pub fn example14() -> Html {
             data={data}
             columns={columns}
             row_end_component={row_end_component}
+            default_sort_column={"Name"}
         />
     }
 }"#

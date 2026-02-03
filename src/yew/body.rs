@@ -78,32 +78,23 @@ pub fn body(props: &TableBodyProps) -> Html {
                     }
                 } else {
                     html! {
-                        for rows.iter().map(|row| {
-                            html! {
-                                <tr class={classes.row} role="row">
-                                    {
-                                        for columns.iter().map(|col| {
-                                            html! {
-                                                <td class={classes.body_cell} role="cell">{ row.get(col.id).unwrap_or(&"".to_string()) }</td>
-                                            }
-                                        })
-                                    }
-                                    {
-                                        if let Some(component) = row_end_component {
-                                            html! {
-                                                <td class={classes.body_cell} role="cell">
-                                                    { component.emit(row.clone()) }
-                                                </td>
-                                            }
-                                        } else {
-                                            html! {}
-                                        }
-                                    }
-                                </tr>
-                            }
-                        })
+                        for row in rows {
+                            <tr class={classes.row} role="row">
+                                for col in columns {
+                                    <td class={classes.body_cell} role="cell">{ row.get(col.id).unwrap_or(&"".to_string()) }</td>
+                                }
+                                if let Some(component) = row_end_component {
+                                        <td class={classes.body_cell} role="cell">
+                                            { component.emit(row.clone()) }
+                                        </td>
+                                } else {
+                                    // html! {}
+                                }
+                            </tr>
+                        }
                     }
-                } }
+                }
+            }
         </tbody>
     }
 }
