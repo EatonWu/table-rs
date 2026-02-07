@@ -91,8 +91,8 @@ pub fn table(props: &TableProps) -> Html {
     } = props;
 
     let page = use_state(|| 0);
-    let sort_column = use_state(|| None::<&'static str>);
-    let sort_order = use_state(|| SortOrder::Asc);
+    let sort_column = use_state(|| default_sort_column.clone());
+    let sort_order = use_state(|| default_sort_order.clone());
     let search_query = use_state(|| {
         let window = web_sys::window().unwrap();
         let search_params =
@@ -193,12 +193,22 @@ pub fn table(props: &TableProps) -> Html {
     };
 
     let container_style = format!(
-        "display: flex; flex-direction: column; height: 100%; {}",
+        "display: flex; flex-direction: column; height: 100%; overflow: auto; {}",
         styles.get("container").unwrap_or(&"")
     );
     let table_style = format!(
-        "flex: 1 1 auto; min-height: 0; {}",
+        "flex: 1 1 auto; min-height: 0; border-collapse: separate; border-spacing: 0; {}",
         styles.get("table").unwrap_or(&"")
+    );
+
+    let search_style = format!(
+        "position: sticky; top: 0; z-index: 2; background-color: var(--bs-body-bg, white); {}",
+        styles.get("search").unwrap_or(&"")
+    );
+
+    let pagination_style = format!(
+        "margin-top: auto; position: sticky; bottom: 0; z-index: 2; background-color: var(--bs-body-bg, white); {}",
+        styles.get("pagination").unwrap_or(&"")
     );
 
     html! {
@@ -207,6 +217,7 @@ pub fn table(props: &TableProps) -> Html {
                     html! {
                         <input
                             class={classes.search_input}
+                            style={search_style}
                             type="text"
                             value={(*search_query).clone()}
                             placeholder={texts.search_placeholder}
@@ -237,7 +248,7 @@ pub fn table(props: &TableProps) -> Html {
             </table>
             { if *paginate {
                     html! {
-                        <div style="margin-top: auto;">
+                        <div style={pagination_style}>
                             <PaginationControls {page} {total_pages} classes={classes.clone()} texts={texts.clone()}/>
                         </div>
                     }

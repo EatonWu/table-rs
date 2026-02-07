@@ -71,12 +71,17 @@ pub fn header(props: &TableHeaderProps) -> Html {
                         Some(Callback::from(move |_| on_sort_column.emit(col_id)))
                     } else { None };
 
+                    let header_style = format!(
+                        "position: sticky; top: 0; z-index: 1; background-color: var(--bs-body-bg, white); {}",
+                        col.style.unwrap_or_default()
+                    );
+
                     html! {
                         <th
                             {onclick}
                             role="columnheader"
                             class={format!("{} {}", classes.header_cell, col.class.unwrap_or("")).trim().to_string()}
-                            style={col.style.unwrap_or_default()}
+                            style={header_style}
                             aria-sort={
                                 if Some(col.id) == **sort_column {
                                     match **sort_order {
@@ -93,8 +98,9 @@ pub fn header(props: &TableHeaderProps) -> Html {
                     }
                 }) }
                 { if *has_row_end {
+                    let row_end_header_style = "position: sticky; top: 0; z-index: 1; background-color: var(--bs-body-bg, white);";
                     html! {
-                        <th class={classes.header_cell.clone()} role="columnheader"></th>
+                        <th class={classes.header_cell} role="columnheader" style={row_end_header_style}></th>
                     }
                 } else {
                     html! {}
