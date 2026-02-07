@@ -192,8 +192,17 @@ pub fn table(props: &TableProps) -> Html {
         })
     };
 
+    let container_style = format!(
+        "display: flex; flex-direction: column; height: 100%; {}",
+        styles.get("container").unwrap_or(&"")
+    );
+    let table_style = format!(
+        "flex: 1 1 auto; min-height: 0; {}",
+        styles.get("table").unwrap_or(&"")
+    );
+
     html! {
-        <div class={classes.container}>
+        <div class={classes.container} style={container_style}>
             { if *search {
                     html! {
                         <input
@@ -208,7 +217,7 @@ pub fn table(props: &TableProps) -> Html {
                 } else {
                     html! {}
                 } }
-            <table class={classes.table} style={*styles.get("table").unwrap_or(&"")} role="table">
+            <table class={classes.table} style={table_style} role="table">
                 <TableHeader
                     columns={columns.clone()}
                     {sort_column}
@@ -228,7 +237,9 @@ pub fn table(props: &TableProps) -> Html {
             </table>
             { if *paginate {
                     html! {
-                        <PaginationControls {page} {total_pages} classes={classes.clone()} texts={texts.clone()}/>
+                        <div style="margin-top: auto;">
+                            <PaginationControls {page} {total_pages} classes={classes.clone()} texts={texts.clone()}/>
+                        </div>
                     }
                 } else {
                     html! {}
