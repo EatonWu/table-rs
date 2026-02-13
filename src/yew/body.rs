@@ -81,7 +81,15 @@ pub fn body(props: &TableBodyProps) -> Html {
                         for row in rows {
                             <tr class={classes.row} role="row">
                                 for col in columns {
-                                    <td class={classes.body_cell} role="cell">{ row.get(col.id).unwrap_or(&"".to_string()) }</td>
+                                    <td class={classes.body_cell} role="cell">
+                                        { 
+                                            if let Some(render) = &col.cell_render {
+                                                render.emit(row.clone())
+                                            } else {
+                                                html! { row.get(col.id).unwrap_or(&"".to_string()) }
+                                            }
+                                        }
+                                    </td>
                                 }
                                 if let Some(component) = row_end_component {
                                         <td class={classes.body_cell} role="cell">

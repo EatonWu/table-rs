@@ -92,7 +92,11 @@ pub fn TableBody(
                 tr { class: "{classes.row}", role: "row",
                     for col in columns.iter() {
                         td { class: "{classes.body_cell}", role: "cell",
-                            "{row.get(col.id).unwrap_or(&String::new())}"
+                            if let Some(render) = &col.cell_render {
+                                {render.read().call(row.clone())}
+                            } else {
+                                "{row.get(col.id).unwrap_or(&String::new())}"
+                            }
                         }
                     }
                     if let Some(component) = row_end_component {

@@ -10,6 +10,10 @@ pub struct Column {
     /// Header text displayed in the column.
     pub header: &'static str,
 
+    /// Optional callback to render custom element for a cell.
+    #[props(default)]
+    pub cell_render: Option<ReadOnlySignal<Callback<HashMap<&'static str, String>, Element>>>,
+
     /// Whether this column is sortable.
     #[props(default)]
     pub sortable: bool,

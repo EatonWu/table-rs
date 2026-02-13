@@ -12,9 +12,9 @@ pub struct Column {
     #[prop_or("")]
     pub header: &'static str,
 
-    /// Callback triggered when accessing column data; can be used for custom rendering.
-    #[prop_or(Callback::noop())]
-    pub accessor: Callback<()>,
+    /// Optional callback to render custom HTML for a cell.
+    #[prop_or_default]
+    pub cell_render: Option<Callback<HashMap<&'static str, String>, Html>>,
 
     /// Determines if the column is sortable.
     #[prop_or(false)]
