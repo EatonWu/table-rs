@@ -24,6 +24,10 @@ pub struct Column {
     #[prop_or(100)]
     pub min_width: u32,
 
+    /// Optional custom cell renderer.
+    #[prop_or_default]
+    pub cell_render: Option<Callback<HashMap<&'static str, String>, Html>>,
+
     /// Optional inline style string for the column header.
     #[prop_or(Some("padding: 8px; font-weight: 600; text-align: left;"))]
     pub style: Option<&'static str>,
