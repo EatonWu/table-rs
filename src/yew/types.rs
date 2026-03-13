@@ -191,6 +191,9 @@ pub struct TableProps {
     #[prop_or(false)]
     pub search: bool,
 
+    #[prop_or(false)]
+    pub filter_enabled: bool,
+
     /// Text labels for the table UI.
     #[prop_or_default]
     pub texts: TableTexts,

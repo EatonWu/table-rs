@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use gloo_timers::callback::Timeout;
 use web_sys::UrlSearchParams;
 use web_sys::wasm_bindgen::JsValue;
@@ -84,6 +85,7 @@ pub fn table(props: &TableProps) -> Html {
         styles,
         paginate,
         search,
+        filter_enabled,
         texts,
         row_end_component,
         default_sort_column,
@@ -99,6 +101,9 @@ pub fn table(props: &TableProps) -> Html {
             UrlSearchParams::new_with_str(&window.location().search().unwrap_or_default()).unwrap();
         search_params.get("search").unwrap_or_default()
     });
+
+    // contains a map of column names to filter values
+    let filter_list = use_state(|| None::<HashMap<String, String>>);
 
     let debounced_search = use_state(|| None::<Timeout>);
 
@@ -213,7 +218,8 @@ pub fn table(props: &TableProps) -> Html {
 
     html! {
         <div class={classes.container} style={container_style}>
-            { if *search {
+            {
+                if *search {
                     html! {
                         <input
                             class={classes.search_input}
@@ -227,7 +233,15 @@ pub fn table(props: &TableProps) -> Html {
                     }
                 } else {
                     html! {}
-                } }
+                }
+            }
+
+            {
+                html! {
+
+                }
+            }
+
             <table class={classes.table} style={table_style} role="table">
                 <TableHeader
                     columns={columns.clone()}
