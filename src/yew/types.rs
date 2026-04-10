@@ -208,7 +208,25 @@ pub struct TableProps {
 
     /// Default sort order.
     #[prop_or(SortOrder::Asc)]
-    pub default_sort_order: SortOrder
+    pub default_sort_order: SortOrder,
+
+    /// Enables server-driven pagination mode.
+    /// In this mode, the table does not slice rows locally and page changes
+    /// are emitted via `on_online_page_change`.
+    #[prop_or(false)]
+    pub online_paginated: bool,
+
+    /// Current zero-based page index for online pagination mode.
+    #[prop_or(0)]
+    pub online_page: usize,
+
+    /// Total pages reported by the backend for online pagination mode.
+    #[prop_or(0)]
+    pub online_total_pages: usize,
+
+    /// Callback emitted when the requested online page changes.
+    #[prop_or_else(Callback::noop)]
+    pub on_online_page_change: Callback<usize>,
 }
 
 /// Props for the table header including sorting logic.
@@ -262,12 +280,21 @@ pub struct TableHeaderProps {
 /// Props for the pagination controls component.
 #[derive(Properties, PartialEq, Clone)]
 pub struct PaginationControlsProps {
-    /// Current page index.
-    pub page: UseStateHandle<usize>,
+    /// Current page index (zero-based).
+    #[prop_or(0)]
+    pub page: usize,
 
     /// Total number of pages.
-    #[prop_or(1)]
+    #[prop_or(0)]
     pub total_pages: usize,
+
+    /// Callback for "previous page".
+    #[prop_or_else(Callback::noop)]
+    pub on_prev: Callback<()>,
+
+    /// Callback for "next page".
+    #[prop_or_else(Callback::noop)]
+    pub on_next: Callback<()>,
 
     /// Class names used to style pagination elements.
     #[prop_or_default]

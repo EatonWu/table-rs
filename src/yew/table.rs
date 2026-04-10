@@ -90,9 +90,13 @@ pub fn table(props: &TableProps) -> Html {
         row_end_component,
         default_sort_column,
         default_sort_order,
+        online_paginated,
+        online_page,
+        online_total_pages,
+        on_online_page_change,
     } = props;
 
-    let page = use_state(|| 0);
+    let local_page = use_state(|| 0);
     let sort_column = use_state(|| default_sort_column.clone());
     let sort_order = use_state(|| default_sort_order.clone());
     let search_query = use_state(|| {
@@ -176,10 +180,20 @@ pub fn table(props: &TableProps) -> Html {
         }
     }
 
-    let total_pages = (filtered_rows.len() as f64 / *page_size as f64).ceil() as usize;
-    let start = *page * page_size;
-    let end = ((*page + 1) * page_size).min(filtered_rows.len());
-    let page_rows = &filtered_rows[start..end];
+    let (current_page, total_pages, page_rows) = if *online_paginated {
+        (*online_page, *online_total_pages, filtered_rows)
+    } else {
+        let total_pages = (filtered_rows.len() as f64 / *page_size as f64).ceil() as usize;
+        let current_page = *local_page;
+        let start = current_page * page_size;
+        let end = ((current_page + 1) * page_size).min(filtered_rows.len());
+        let page_rows = if start < filtered_rows.len() {
+            filtered_rows[start..end].to_vec()
+        } else {
+            Vec::new()
+        };
+        (current_page, total_pages, page_rows)
+    };
 
     let on_sort_column = {
         let sort_column = sort_column.clone();
@@ -197,22 +211,56 @@ pub fn table(props: &TableProps) -> Html {
         })
     };
 
+    let on_prev_page = {
+        let local_page = local_page.clone();
+        let on_online_page_change = on_online_page_change.clone();
+        let online_paginated = *online_paginated;
+        Callback::from(move |_| {
+            if online_paginated {
+                if current_page > 0 {
+                    on_online_page_change.emit(current_page - 1);
+                }
+            } else if *local_page > 0 {
+                local_page.set(*local_page - 1);
+            }
+        })
+    };
+
+    let on_next_page = {
+        let local_page = local_page.clone();
+        let on_online_page_change = on_online_page_change.clone();
+        let online_paginated = *online_paginated;
+        Callback::from(move |_| {
+            if online_paginated {
+                if total_pages > 0 && current_page + 1 < total_pages {
+                    on_online_page_change.emit(current_page + 1);
+                }
+            } else {
+                local_page.set(*local_page + 1);
+            }
+        })
+    };
+
     let container_style = format!(
-        "display: flex; flex-direction: column; height: 100%; overflow: auto; {}",
+        "display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; {}",
         styles.get("container").unwrap_or(&"")
     );
+    let table_viewport_style = format!(
+        "flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: auto; {}",
+        styles.get("table_viewport").unwrap_or(&"")
+    );
     let table_style = format!(
-        "flex: 1 1 auto; min-height: 0; border-collapse: separate; border-spacing: 0; {}",
+        "width: 100%; border-collapse: separate; border-spacing: 0; {}",
         styles.get("table").unwrap_or(&"")
     );
 
     let search_style = format!(
-        "position: sticky; top: 0; z-index: 2; background-color: var(--bs-body-bg, white); {}",
+        "flex: 0 0 auto; {}",
         styles.get("search").unwrap_or(&"")
     );
 
     let pagination_style = format!(
-        "margin-top: auto; position: sticky; bottom: 0; z-index: 2; background-color: var(--bs-body-bg, white); {}",
+        "flex: 0 0 auto; margin-top: 0.5rem; position: sticky; bottom: 0; z-index: 2; background-color: var(--bs-body-bg, white); {}",
         styles.get("pagination").unwrap_or(&"")
     );
 
@@ -242,28 +290,37 @@ pub fn table(props: &TableProps) -> Html {
                 }
             }
 
-            <table class={classes.table} style={table_style} role="table">
-                <TableHeader
-                    columns={columns.clone()}
-                    {sort_column}
-                    {sort_order}
-                    {on_sort_column}
-                    classes={classes.clone()}
-                    has_row_end={row_end_component.is_some()}
-                />
-                <TableBody
-                    columns={columns.clone()}
-                    rows={page_rows.to_vec()}
-                    loading={loading}
-                    classes={classes.clone()}
-                    texts={texts.clone()}
-                    row_end_component={row_end_component.clone()}
-                />
-            </table>
+            <div style={table_viewport_style}>
+                <table class={classes.table} style={table_style} role="table">
+                    <TableHeader
+                        columns={columns.clone()}
+                        {sort_column}
+                        {sort_order}
+                        {on_sort_column}
+                        classes={classes.clone()}
+                        has_row_end={row_end_component.is_some()}
+                    />
+                    <TableBody
+                        columns={columns.clone()}
+                        rows={page_rows}
+                        loading={loading}
+                        classes={classes.clone()}
+                        texts={texts.clone()}
+                        row_end_component={row_end_component.clone()}
+                    />
+                </table>
+            </div>
             { if *paginate {
                     html! {
                         <div style={pagination_style}>
-                            <PaginationControls {page} {total_pages} classes={classes.clone()} texts={texts.clone()}/>
+                            <PaginationControls
+                                page={current_page}
+                                total_pages={total_pages}
+                                on_prev={on_prev_page}
+                                on_next={on_next_page}
+                                classes={classes.clone()}
+                                texts={texts.clone()}
+                            />
                         </div>
                     }
                 } else {
