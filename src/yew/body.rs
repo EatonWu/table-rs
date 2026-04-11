@@ -82,7 +82,7 @@ pub fn body(props: &TableBodyProps) -> Html {
                             <tr class={classes.row} role="row">
                                 for col in columns {
                                     <td class={classes.body_cell} role="cell">
-                                        { 
+                                        {
                                             if let Some(render) = &col.cell_render {
                                                 render.emit(row.clone())
                                             } else {

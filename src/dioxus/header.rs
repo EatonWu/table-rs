@@ -62,8 +62,7 @@ pub fn TableHeader(
     sort_order: Signal<SortOrder>,
     on_sort_column: EventHandler<&'static str>,
     classes: TableClasses,
-    #[props(default)]
-    has_row_end: bool,
+    #[props(default)] has_row_end: bool,
 ) -> Element {
     let header_cells = columns.iter().map(|col| {
         let col_id = col.id;

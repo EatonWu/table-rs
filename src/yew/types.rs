@@ -296,6 +296,10 @@ pub struct PaginationControlsProps {
     #[prop_or_else(Callback::noop)]
     pub on_next: Callback<()>,
 
+    /// Callback for jumping to a specific page (zero-based).
+    #[prop_or_else(Callback::noop)]
+    pub on_jump: Callback<usize>,
+
     /// Class names used to style pagination elements.
     #[prop_or_default]
     pub classes: TableClasses,

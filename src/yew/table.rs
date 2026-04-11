@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use gloo_timers::callback::Timeout;
+use std::collections::HashMap;
 use web_sys::UrlSearchParams;
 use web_sys::wasm_bindgen::JsValue;
 use yew::prelude::*;
@@ -241,6 +241,24 @@ pub fn table(props: &TableProps) -> Html {
         })
     };
 
+    let on_jump_page = {
+        let local_page = local_page.clone();
+        let on_online_page_change = on_online_page_change.clone();
+        let online_paginated = *online_paginated;
+        Callback::from(move |target_page: usize| {
+            if total_pages == 0 {
+                return;
+            }
+            let max_page = total_pages.saturating_sub(1);
+            let clamped = target_page.min(max_page);
+            if online_paginated {
+                on_online_page_change.emit(clamped);
+            } else {
+                local_page.set(clamped);
+            }
+        })
+    };
+
     let container_style = format!(
         "display: flex; flex-direction: column; height: 100%; min-height: 0; overflow: hidden; {}",
         styles.get("container").unwrap_or(&"")
@@ -254,10 +272,7 @@ pub fn table(props: &TableProps) -> Html {
         styles.get("table").unwrap_or(&"")
     );
 
-    let search_style = format!(
-        "flex: 0 0 auto; {}",
-        styles.get("search").unwrap_or(&"")
-    );
+    let search_style = format!("flex: 0 0 auto; {}", styles.get("search").unwrap_or(&""));
 
     let pagination_style = format!(
         "flex: 0 0 auto; margin-top: 0.5rem; position: sticky; bottom: 0; z-index: 2; background-color: var(--bs-body-bg, white); {}",
@@ -318,6 +333,7 @@ pub fn table(props: &TableProps) -> Html {
                                 total_pages={total_pages}
                                 on_prev={on_prev_page}
                                 on_next={on_next_page}
+                                on_jump={on_jump_page}
                                 classes={classes.clone()}
                                 texts={texts.clone()}
                             />

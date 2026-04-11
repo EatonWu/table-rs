@@ -65,8 +65,9 @@ pub fn TableBody(
     loading: bool,
     classes: TableClasses,
     texts: TableTexts,
-    #[props(default)]
-    row_end_component: Option<ReadOnlySignal<Callback<HashMap<&'static str, String>, Element>>>,
+    #[props(default)] row_end_component: Option<
+        ReadOnlySignal<Callback<HashMap<&'static str, String>, Element>>,
+    >,
 ) -> Element {
     let content = if loading {
         rsx! {
