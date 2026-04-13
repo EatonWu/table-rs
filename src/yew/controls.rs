@@ -98,7 +98,7 @@ pub fn pagination_controls(props: &PaginationControlsProps) -> Html {
                     class="form-control form-control-sm d-inline-block"
                     disabled={!has_pages}
                 />
-                {"of"}
+                {"of "}
                 {total_pages.to_string()}
             </span>
             <button
