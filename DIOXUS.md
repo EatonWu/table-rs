@@ -77,6 +77,7 @@ Incorporating Table RS into your Dioxus app involves just a few steps:
 | `loading`   | `bool`                                | Show loading state if true.       | `false` |
 | `paginate`  | `bool`                                | Enable pagination.                | `false` |
 | `search`    | `bool`                                | Enable global search input.       | `false` |
+| `filterable_columns` | `HashMap<&'static str, FilterType>` | Enables column filters by mapping column IDs to filter types. | `{}` |
 | `classes`   | `TableClasses`                        | CSS class overrides.              | Default |
 | `styles`    | `HashMap<&'static str, &'static str>` | Inline style overrides.           | `{}`    |
 | `texts`     | `TableTexts`                          | Text customization for UI labels. | Default |
@@ -105,6 +106,13 @@ Incorporating Table RS into your Dioxus app involves just a few steps:
 | `loading_row`       | `&'static str` | Row shown when loading.              | `"loading-row"`         |
 | `empty_row`         | `&'static str` | Row shown when no data is available. | `"empty-row"`           |
 | `search_input`      | `&'static str` | Search input field class.            | `"search-input"`        |
+| `filter_button`     | `&'static str` | Class for the + Filter button.       | `"filter-button"`       |
+| `filter_panel`      | `&'static str` | Class for the filter panel wrapper.  | `"filter-panel"`        |
+| `filter_row`        | `&'static str` | Class for each filter row.           | `"filter-row"`          |
+| `filter_select`     | `&'static str` | Class for filter column select.      | `"filter-select"`       |
+| `filter_operator`   | `&'static str` | Class for filter operator select.    | `"filter-operator"`     |
+| `filter_input`      | `&'static str` | Class for filter value input.        | `"filter-input"`        |
+| `filter_remove_button` | `&'static str` | Class for filter remove button.   | `"filter-remove-button"`|
 | `pagination`        | `&'static str` | Pagination controls wrapper.         | `"pagination-controls"` |
 | `pagination_button` | `&'static str` | Pagination buttons.                  | `"pagination-button"`   |
 
@@ -151,6 +159,8 @@ Incorporating Table RS into your Dioxus app involves just a few steps:
 
 - The `data` must match the `id` values defined in each `Column`.
 - The `search` prop enables input-based filtering across all columns.
+- Column filters are enabled by providing `filterable_columns`, and are applied before search.
+- Operators vary by filter type (string: contains/equals/starts/ends, number: =/!=/>/>=/</<=, bool: is/is not, plus is empty/is not empty).
 - Pagination is controlled using the `page_size` and `paginate` props.
 - Sorting is column-specific via `sortable = true` and `on_sort_column`.
 - All style classes can be customized via `TableClasses`.

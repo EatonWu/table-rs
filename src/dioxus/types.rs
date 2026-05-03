@@ -27,6 +27,19 @@ pub struct Column {
     pub class: Option<&'static str>,
 }
 
+/// Supported filter input types for column filters.
+#[derive(PartialEq, Clone)]
+pub enum FilterType {
+    /// String filter (case-insensitive contains).
+    String,
+    /// Numeric filter (exact match after parsing to f64).
+    Number,
+    /// Boolean filter (expects "true" or "false").
+    Bool,
+    /// Enumerated filter (select from a fixed set of options).
+    Enum(Vec<String>),
+}
+
 /// Text labels for table UI elements.
 #[derive(PartialEq, Props, Clone)]
 pub struct TableTexts {
@@ -89,6 +102,27 @@ pub struct TableClasses {
     /// Class for the search input field.
     pub search_input: &'static str,
 
+    /// Class for the filter button.
+    pub filter_button: &'static str,
+
+    /// Class for the filter panel wrapper.
+    pub filter_panel: &'static str,
+
+    /// Class for a filter row.
+    pub filter_row: &'static str,
+
+    /// Class for filter column select.
+    pub filter_select: &'static str,
+
+    /// Class for filter operator select.
+    pub filter_operator: &'static str,
+
+    /// Class for filter value input.
+    pub filter_input: &'static str,
+
+    /// Class for the filter remove button.
+    pub filter_remove_button: &'static str,
+
     /// Class for header cells (`<th>`).
     pub header_cell: &'static str,
 
@@ -117,6 +151,13 @@ impl Default for TableClasses {
             tbody: "tbody",
             pagination: "pagination-controls",
             search_input: "search-input",
+            filter_button: "filter-button",
+            filter_panel: "filter-panel",
+            filter_row: "filter-row",
+            filter_select: "filter-select",
+            filter_operator: "filter-operator",
+            filter_input: "filter-input",
+            filter_remove_button: "filter-remove-button",
             header_cell: "th",
             body_cell: "td",
             row: "tr",
@@ -153,6 +194,10 @@ pub struct TableProps {
     /// Enables the search input field.
     #[props(default = false)]
     pub search: bool,
+
+    /// Map of filterable columns and their filter type.
+    #[props(default)]
+    pub filterable_columns: HashMap<&'static str, FilterType>,
 
     /// Texts for various table UI messages.
     #[props(default)]

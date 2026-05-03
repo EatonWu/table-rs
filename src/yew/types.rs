@@ -48,6 +48,19 @@ pub enum SortOrder {
     Desc,
 }
 
+/// Supported filter input types for column filters.
+#[derive(Clone, PartialEq)]
+pub enum FilterType {
+    /// String filter (case-insensitive contains).
+    String,
+    /// Numeric filter (exact match after parsing to f64).
+    Number,
+    /// Boolean filter (expects "true" or "false").
+    Bool,
+    /// Enumerated filter (select from a fixed set of options).
+    Enum(Vec<String>),
+}
+
 /// Class names used to style various parts of the table.
 #[derive(Properties, PartialEq, Clone)]
 pub struct TableClasses {
@@ -74,6 +87,34 @@ pub struct TableClasses {
     /// Class name for the search input.
     #[prop_or("search-input")]
     pub search_input: &'static str,
+
+    /// Class name for the filter button.
+    #[prop_or("filter-button")]
+    pub filter_button: &'static str,
+
+    /// Class name for the filter panel wrapper.
+    #[prop_or("filter-panel")]
+    pub filter_panel: &'static str,
+
+    /// Class name for a filter row.
+    #[prop_or("filter-row")]
+    pub filter_row: &'static str,
+
+    /// Class name for filter column select.
+    #[prop_or("filter-select")]
+    pub filter_select: &'static str,
+
+    /// Class name for filter operator select.
+    #[prop_or("filter-operator")]
+    pub filter_operator: &'static str,
+
+    /// Class name for filter value input.
+    #[prop_or("filter-input")]
+    pub filter_input: &'static str,
+
+    /// Class name for the filter remove button.
+    #[prop_or("filter-remove-button")]
+    pub filter_remove_button: &'static str,
 
     /// Class name for header cells (`<th>`).
     #[prop_or("th")]
@@ -109,6 +150,13 @@ impl Default for TableClasses {
             tbody: "tbody",
             pagination: "pagination-controls",
             search_input: "search-input",
+            filter_button: "filter-button",
+            filter_panel: "filter-panel",
+            filter_row: "filter-row",
+            filter_select: "filter-select",
+            filter_operator: "filter-operator",
+            filter_input: "filter-input",
+            filter_remove_button: "filter-remove-button",
             header_cell: "th",
             body_cell: "td",
             row: "tr",
@@ -194,6 +242,10 @@ pub struct TableProps {
     /// Whether to enable search functionality.
     #[prop_or(false)]
     pub search: bool,
+
+    /// Map of filterable columns and their filter type.
+    #[prop_or_default]
+    pub filterable_columns: HashMap<&'static str, FilterType>,
 
     /// Text labels for the table UI.
     #[prop_or_default]
