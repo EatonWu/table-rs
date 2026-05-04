@@ -1,7 +1,7 @@
 use gloo_timers::callback::Timeout;
 use yew::prelude::*;
-use yew_bootstrap::component::{Button, ButtonSize};
 use yew_bootstrap::component::form::{FormControl, FormControlType, SelectOption};
+use yew_bootstrap::component::{Button, ButtonSize};
 use yew_bootstrap::util::Color;
 use yew_icons::{Icon, IconData};
 
@@ -86,7 +86,12 @@ fn operator_label(filter_type: &FilterType, operator: FilterOperator) -> &'stati
     }
 }
 
-fn matches_filter(filter_type: &FilterType, operator: FilterOperator, row_value: &str, filter_value: &str) -> bool {
+fn matches_filter(
+    filter_type: &FilterType,
+    operator: FilterOperator,
+    row_value: &str,
+    filter_value: &str,
+) -> bool {
     let row_trimmed = row_value.trim();
     let filter_trimmed = filter_value.trim();
 
@@ -139,13 +144,11 @@ fn matches_filter(filter_type: &FilterType, operator: FilterOperator, row_value:
                 _ => false,
             }
         }
-        FilterType::Enum(_) => {
-            match operator {
-                FilterOperator::Equals => row_trimmed == filter_trimmed,
-                FilterOperator::NotEqual => row_trimmed != filter_trimmed,
-                _ => false,
-            }
-        }
+        FilterType::Enum(_) => match operator {
+            FilterOperator::Equals => row_trimmed == filter_trimmed,
+            FilterOperator::NotEqual => row_trimmed != filter_trimmed,
+            _ => false,
+        },
     }
 }
 
@@ -229,9 +232,13 @@ pub fn table(props: &TableProps) -> Html {
         row_end_component,
         default_sort_column,
         default_sort_order,
+        online_paginated,
+        online_page,
+        online_total_pages,
+        on_online_page_change,
     } = props;
 
-    let page = use_state(|| 0);
+    let local_page = use_state(|| 0);
     let sort_column = use_state(|| default_sort_column.clone());
     let sort_order = use_state(|| default_sort_order.clone());
     let search_query = use_state(|| String::new());
@@ -243,7 +250,7 @@ pub fn table(props: &TableProps) -> Html {
     let on_search_change = {
         let debounced_search = debounced_search.clone();
         let search_query = search_query.clone();
-        let page = page.clone();
+        let page = local_page.clone();
         Callback::from(move |e: InputEvent| {
             let search_query = search_query.clone();
             let page = page.clone();
@@ -278,7 +285,10 @@ pub fn table(props: &TableProps) -> Html {
                     return true;
                 };
 
-                let row_value = row.get(filter.column_id).map(|val| val.as_str()).unwrap_or("");
+                let row_value = row
+                    .get(filter.column_id)
+                    .map(|val| val.as_str())
+                    .unwrap_or("");
                 matches_filter(filter_type, filter.operator, row_value, &filter.value)
             })
         });
@@ -308,10 +318,20 @@ pub fn table(props: &TableProps) -> Html {
         }
     }
 
-    let total_pages = (filtered_rows.len() as f64 / *page_size as f64).ceil() as usize;
-    let start = *page * page_size;
-    let end = ((*page + 1) * page_size).min(filtered_rows.len());
-    let page_rows = &filtered_rows[start..end];
+    let (current_page, total_pages, page_rows) = if *online_paginated {
+        (*online_page, *online_total_pages, filtered_rows)
+    } else {
+        let total_pages = (filtered_rows.len() as f64 / *page_size as f64).ceil() as usize;
+        let current_page = *local_page;
+        let start = current_page * page_size;
+        let end = ((current_page + 1) * page_size).min(filtered_rows.len());
+        let page_rows = if start < filtered_rows.len() {
+            filtered_rows[start..end].to_vec()
+        } else {
+            Vec::new()
+        };
+        (current_page, total_pages, page_rows)
+    };
 
     let on_sort_column = {
         let sort_column = sort_column.clone();
@@ -329,14 +349,68 @@ pub fn table(props: &TableProps) -> Html {
         })
     };
 
+    let on_prev_page = {
+        let local_page = local_page.clone();
+        let on_online_page_change = on_online_page_change.clone();
+        let online_paginated = *online_paginated;
+        Callback::from(move |_| {
+            if online_paginated {
+                if current_page > 0 {
+                    on_online_page_change.emit(current_page - 1);
+                }
+            } else if *local_page > 0 {
+                local_page.set(*local_page - 1);
+            }
+        })
+    };
+
+    let on_next_page = {
+        let local_page = local_page.clone();
+        let on_online_page_change = on_online_page_change.clone();
+        let online_paginated = *online_paginated;
+        Callback::from(move |_| {
+            if online_paginated {
+                if total_pages > 0 && current_page + 1 < total_pages {
+                    on_online_page_change.emit(current_page + 1);
+                }
+            } else {
+                local_page.set(*local_page + 1);
+            }
+        })
+    };
+
+    let on_jump_page = {
+        let local_page = local_page.clone();
+        let on_online_page_change = on_online_page_change.clone();
+        let online_paginated = *online_paginated;
+        Callback::from(move |target_page: usize| {
+            if total_pages == 0 {
+                return;
+            }
+            let max_page = total_pages.saturating_sub(1);
+            let clamped = target_page.min(max_page);
+            if online_paginated {
+                on_online_page_change.emit(clamped);
+            } else {
+                local_page.set(clamped);
+            }
+        })
+    };
+
     let available_filter_columns: Vec<FilterColumnOption> = columns
         .iter()
         .filter_map(|col| {
-            filterable_columns.get(col.id).map(|filter_type| FilterColumnOption {
-                id: col.id,
-                label: if col.header.is_empty() { col.id.to_string() } else { col.header.to_string() },
-                filter_type: filter_type.clone(),
-            })
+            filterable_columns
+                .get(col.id)
+                .map(|filter_type| FilterColumnOption {
+                    id: col.id,
+                    label: if col.header.is_empty() {
+                        col.id.to_string()
+                    } else {
+                        col.header.to_string()
+                    },
+                    filter_type: filter_type.clone(),
+                })
         })
         .collect();
 
@@ -350,7 +424,7 @@ pub fn table(props: &TableProps) -> Html {
     let on_add_filter = {
         let filters = filters.clone();
         let available_filter_columns = available_filter_columns.clone();
-        let page = page.clone();
+        let page = local_page.clone();
         let active_filter_dropdown = active_filter_dropdown.clone();
         let show_add_filter_menu = show_add_filter_menu.clone();
         Callback::from(move |id: String| {
@@ -358,12 +432,18 @@ pub fn table(props: &TableProps) -> Html {
                 return;
             }
             let mut next = (*filters).clone();
-            if let Some(existing_index) = next.iter().position(|filter| filter.column_id == id.as_str()) {
+            if let Some(existing_index) = next
+                .iter()
+                .position(|filter| filter.column_id == id.as_str())
+            {
                 active_filter_dropdown.set(Some(existing_index));
                 show_add_filter_menu.set(false);
                 return;
             }
-            if let Some(option) = available_filter_columns.iter().find(|option| option.id == id.as_str()) {
+            if let Some(option) = available_filter_columns
+                .iter()
+                .find(|option| option.id == id.as_str())
+            {
                 next.push(ColumnFilter {
                     column_id: option.id,
                     operator: default_operator(&option.filter_type),
@@ -415,6 +495,7 @@ pub fn table(props: &TableProps) -> Html {
             { if *search || !filterable_columns.is_empty() {
                 let filters_enabled = !filterable_columns.is_empty();
                 let filters = filters.clone();
+                let page = local_page.clone();
                 let on_add_filter = on_add_filter.clone();
                 let on_clear_filters = {
                     let filters = filters.clone();
@@ -776,7 +857,7 @@ pub fn table(props: &TableProps) -> Html {
                 />
                 <TableBody
                     columns={columns.clone()}
-                    rows={page_rows.to_vec()}
+                    rows={page_rows.clone()}
                     loading={loading}
                     classes={classes.clone()}
                     texts={texts.clone()}
@@ -786,7 +867,15 @@ pub fn table(props: &TableProps) -> Html {
             { if *paginate {
                     html! {
                         <div style={pagination_style}>
-                            <PaginationControls {page} {total_pages} classes={classes.clone()} texts={texts.clone()}/>
+                            <PaginationControls
+                                page={current_page}
+                                total_pages={total_pages}
+                                on_prev={on_prev_page}
+                                on_next={on_next_page}
+                                on_jump={on_jump_page}
+                                classes={classes.clone()}
+                                texts={texts.clone()}
+                            />
                         </div>
                     }
                 } else {
