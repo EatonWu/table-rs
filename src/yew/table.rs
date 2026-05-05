@@ -1,9 +1,11 @@
 use gloo_timers::callback::Timeout;
+use wasm_bindgen::JsCast;
 use yew::prelude::*;
 use yew_bootstrap::component::form::{FormControl, FormControlType, SelectOption};
 use yew_bootstrap::component::{Button, ButtonSize};
 use yew_bootstrap::util::Color;
 use yew_icons::{Icon, IconData};
+use web_sys::{Element, HtmlScriptElement, HtmlSelectElement};
 
 use crate::yew::body::TableBody;
 use crate::yew::controls::PaginationControls;
@@ -37,6 +39,25 @@ enum FilterOperator {
     LessThanOrEqual,
     IsEmpty,
     IsNotEmpty,
+}
+
+fn is_event_inside_root(event: &web_sys::Event, root: &Element) -> bool {
+    let Some(mut current) = event
+        .target()
+        .and_then(|target| target.dyn_into::<Element>().ok())
+    else {
+        return false;
+    };
+
+    loop {
+        if current.is_same_node(Some(root)) {
+            return true;
+        }
+        let Some(parent) = current.parent_element() else {
+            return false;
+        };
+        current = parent;
+    }
 }
 
 fn default_operator(filter_type: &FilterType) -> FilterOperator {
@@ -246,6 +267,59 @@ pub fn table(props: &TableProps) -> Html {
     let filters = use_state(|| Vec::<ColumnFilter>::new());
     let active_filter_dropdown = use_state(|| None::<usize>);
     let show_add_filter_menu = use_state(|| false);
+    let filter_menu_root_ref = use_node_ref();
+
+    {
+        let active_filter_dropdown = active_filter_dropdown.clone();
+        let show_add_filter_menu = show_add_filter_menu.clone();
+        let filter_menu_root_ref = filter_menu_root_ref.clone();
+        use_effect_with(
+            ((*active_filter_dropdown).is_some(), *show_add_filter_menu),
+            move |(any_filter_open, add_menu_open)| {
+                let mut click_listener: Option<gloo_events::EventListener> = None;
+                let mut focus_listener: Option<gloo_events::EventListener> = None;
+
+                if *any_filter_open || *add_menu_open {
+                    if let Some(document) = web_sys::window().and_then(|window| window.document()) {
+                        click_listener = Some({
+                            let active_filter_dropdown = active_filter_dropdown.clone();
+                            let show_add_filter_menu = show_add_filter_menu.clone();
+                            let filter_menu_root_ref = filter_menu_root_ref.clone();
+                            gloo_events::EventListener::new(&document, "mousedown", move |event| {
+                                let Some(root) = filter_menu_root_ref.cast::<Element>() else {
+                                    return;
+                                };
+                                if !is_event_inside_root(event, &root) {
+                                    active_filter_dropdown.set(None);
+                                    show_add_filter_menu.set(false);
+                                }
+                            })
+                        });
+
+                        focus_listener = Some({
+                            let active_filter_dropdown = active_filter_dropdown.clone();
+                            let show_add_filter_menu = show_add_filter_menu.clone();
+                            let filter_menu_root_ref = filter_menu_root_ref.clone();
+                            gloo_events::EventListener::new(&document, "focusin", move |event| {
+                                let Some(root) = filter_menu_root_ref.cast::<Element>() else {
+                                    return;
+                                };
+                                if !is_event_inside_root(event, &root) {
+                                    active_filter_dropdown.set(None);
+                                    show_add_filter_menu.set(false);
+                                }
+                            })
+                        });
+                    }
+                }
+
+                move || {
+                    drop(click_listener);
+                    drop(focus_listener);
+                }
+            },
+        );
+    }
 
     let on_search_change = {
         let debounced_search = debounced_search.clone();
@@ -537,7 +611,7 @@ pub fn table(props: &TableProps) -> Html {
                                 .cloned()
                                 .collect();
                             html! {
-                                <div class={classes.filter_panel} style={filter_panel_style}>
+                                <div class={classes.filter_panel} style={filter_panel_style} ref={filter_menu_root_ref.clone()}>
                                     <div class={classes!(classes.filter_row, "d-flex", "gap-2", "align-items-center", "flex-wrap")} style={filter_bar_style}>
                                         { for filters.iter().enumerate().map(|(index, filter)| {
                                             let active_filter_dropdown = active_filter_dropdown.clone();
@@ -566,11 +640,11 @@ pub fn table(props: &TableProps) -> Html {
                                             let filters_for_operator = filters.clone();
                                             let page_for_operator = page.clone();
                                             let on_operator_change = Callback::from(move |e: Event| {
-                                                let input: web_sys::HtmlSelectElement = e.target_unchecked_into();
-                                                let value = input.value();
+                                                let input: HtmlScriptElement = e.target_unchecked_into();
+                                                let value = input.value_of();
                                                 let mut next = (*filters_for_operator).clone();
                                                 if let Some(filter_entry) = next.get_mut(index) {
-                                                    filter_entry.operator = match value.as_str() {
+                                                    filter_entry.operator = match value.as_string().unwrap_or_default().as_str() {
                                                         "contains" => FilterOperator::Contains,
                                                         "equals" => FilterOperator::Equals,
                                                         "not_equals" => FilterOperator::NotEqual,
@@ -687,7 +761,7 @@ pub fn table(props: &TableProps) -> Html {
                                                                             let filters_for_bool = filters.clone();
                                                                             let page_for_bool = page.clone();
                                                                             Callback::from(move |e: Event| {
-                                                                                let input: web_sys::HtmlSelectElement = e.target_unchecked_into();
+                                                                                let input: HtmlSelectElement = e.target_unchecked_into();
                                                                                 let value = input.value();
                                                                                 let mut next = (*filters_for_bool).clone();
                                                                                 if let Some(filter_entry) = next.get_mut(index) {
@@ -716,7 +790,7 @@ pub fn table(props: &TableProps) -> Html {
                                                                             let filters_for_enum = filters.clone();
                                                                             let page_for_enum = page.clone();
                                                                             Callback::from(move |e: Event| {
-                                                                                let input: web_sys::HtmlSelectElement = e.target_unchecked_into();
+                                                                                let input: HtmlSelectElement = e.target_unchecked_into();
                                                                                 let value = input.value();
                                                                                 let mut next = (*filters_for_enum).clone();
                                                                                 if let Some(filter_entry) = next.get_mut(index) {
@@ -801,8 +875,8 @@ pub fn table(props: &TableProps) -> Html {
                                                     ctype={FormControlType::Select}
                                                     class={classes!(classes.filter_select)}
                                                     onchange={Callback::from(move |e: Event| {
-                                                        let input: web_sys::HtmlSelectElement = e.target_unchecked_into();
-                                                        on_add_filter.emit(input.value());
+                                                        let input: HtmlScriptElement = e.target_unchecked_into();
+                                                        on_add_filter.emit(input.value_of().as_string().unwrap_or_default());
                                                     })}
                                                 >
                                                     <SelectOption label="Select column..." value="" selected={true} />

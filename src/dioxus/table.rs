@@ -35,7 +35,12 @@ fn default_operator(filter_type: &FilterType) -> FilterOperator {
     }
 }
 
-fn matches_filter(filter_type: &FilterType, operator: FilterOperator, row_value: &str, filter_value: &str) -> bool {
+fn matches_filter(
+    filter_type: &FilterType,
+    operator: FilterOperator,
+    row_value: &str,
+    filter_value: &str,
+) -> bool {
     let row_trimmed = row_value.trim();
     let filter_trimmed = filter_value.trim();
 
@@ -180,7 +185,10 @@ pub fn Table(props: TableProps) -> Element {
                         return true;
                     };
 
-                    let row_value = row.get(filter.column_id).map(|val| val.as_str()).unwrap_or("");
+                    let row_value = row
+                        .get(filter.column_id)
+                        .map(|val| val.as_str())
+                        .unwrap_or("");
                     matches_filter(filter_type, filter.operator, row_value, &filter.value)
                 })
             });
@@ -231,7 +239,11 @@ pub fn Table(props: TableProps) -> Element {
 
     let available_filter_columns: Vec<(&'static str, FilterType)> = columns
         .iter()
-        .filter_map(|col| filterable_columns.get(col.id).map(|filter_type| (col.id, *filter_type)))
+        .filter_map(|col| {
+            filterable_columns
+                .get(col.id)
+                .map(|filter_type| (col.id, *filter_type))
+        })
         .collect();
 
     let on_add_filter = {
