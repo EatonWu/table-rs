@@ -262,24 +262,6 @@ pub struct TableProps {
     /// Default sort order.
     #[prop_or(SortOrder::Asc)]
     pub default_sort_order: SortOrder,
-
-    /// Enables server-driven pagination mode.
-    /// In this mode, the table does not slice rows locally and page changes
-    /// are emitted via `on_online_page_change`.
-    #[prop_or(false)]
-    pub online_paginated: bool,
-
-    /// Current zero-based page index for online pagination mode.
-    #[prop_or(0)]
-    pub online_page: usize,
-
-    /// Total pages reported by the backend for online pagination mode.
-    #[prop_or(0)]
-    pub online_total_pages: usize,
-
-    /// Callback emitted when the requested online page changes.
-    #[prop_or_else(Callback::noop)]
-    pub on_online_page_change: Callback<usize>,
 }
 
 /// Props for the table header including sorting logic.

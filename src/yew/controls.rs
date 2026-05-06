@@ -11,6 +11,7 @@ pub fn pagination_controls(props: &PaginationControlsProps) -> Html {
         on_jump,
         classes,
         texts,
+        ..
     } = props;
     let page_val = *page;
     let page_input = use_state(|| {
