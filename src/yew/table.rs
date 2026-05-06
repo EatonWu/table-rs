@@ -1,4 +1,5 @@
 use gloo_timers::callback::Timeout;
+use std::collections::HashMap;
 use yew::prelude::*;
 use yew_bootstrap::component::form::{FormControl, FormControlType, SelectOption};
 use yew_bootstrap::component::{Button, ButtonSize};
@@ -226,19 +227,19 @@ pub fn table(props: &TableProps) -> Html {
         classes,
         styles,
         paginate,
+        online_paginated,
+        online_page,
+        online_total_pages,
+        on_online_page_change,
         search,
         filterable_columns,
         texts,
         row_end_component,
         default_sort_column,
         default_sort_order,
-        online_paginated,
-        online_page,
-        online_total_pages,
-        on_online_page_change,
     } = props;
 
-    let local_page = use_state(|| 0);
+    let page = use_state(|| 0);
     let sort_column = use_state(|| default_sort_column.clone());
     let sort_order = use_state(|| default_sort_order.clone());
     let search_query = use_state(|| String::new());
@@ -250,7 +251,7 @@ pub fn table(props: &TableProps) -> Html {
     let on_search_change = {
         let debounced_search = debounced_search.clone();
         let search_query = search_query.clone();
-        let page = local_page.clone();
+        let page = page.clone();
         Callback::from(move |e: InputEvent| {
             let search_query = search_query.clone();
             let page = page.clone();
@@ -318,19 +319,37 @@ pub fn table(props: &TableProps) -> Html {
         }
     }
 
-    let (current_page, total_pages, page_rows) = if *online_paginated {
-        (*online_page, *online_total_pages, filtered_rows)
+    let total_pages = if *online_paginated {
+        (*online_total_pages).max(1)
     } else {
-        let total_pages = (filtered_rows.len() as f64 / *page_size as f64).ceil() as usize;
-        let current_page = *local_page;
+        (filtered_rows.len() as f64 / *page_size as f64)
+            .ceil()
+            .max(1.0) as usize
+    };
+    let current_page = if *online_paginated {
+        (*online_page).min(total_pages.saturating_sub(1))
+    } else {
+        (*page).min(total_pages.saturating_sub(1))
+    };
+    let page_rows: Vec<HashMap<&'static str, String>> = if *online_paginated {
+        filtered_rows
+    } else {
         let start = current_page * page_size;
         let end = ((current_page + 1) * page_size).min(filtered_rows.len());
-        let page_rows = if start < filtered_rows.len() {
-            filtered_rows[start..end].to_vec()
-        } else {
-            Vec::new()
-        };
-        (current_page, total_pages, page_rows)
+        filtered_rows[start..end].to_vec()
+    };
+
+    let on_page_change = {
+        let page = page.clone();
+        let on_online_page_change = on_online_page_change.clone();
+        let online_paginated = *online_paginated;
+        Callback::from(move |next_page: usize| {
+            if online_paginated {
+                on_online_page_change.emit(next_page);
+            } else {
+                page.set(next_page);
+            }
+        })
     };
 
     let on_sort_column = {
@@ -345,54 +364,6 @@ pub fn table(props: &TableProps) -> Html {
             } else {
                 sort_column.set(Some(id));
                 sort_order.set(SortOrder::Asc);
-            }
-        })
-    };
-
-    let on_prev_page = {
-        let local_page = local_page.clone();
-        let on_online_page_change = on_online_page_change.clone();
-        let online_paginated = *online_paginated;
-        Callback::from(move |_| {
-            if online_paginated {
-                if current_page > 0 {
-                    on_online_page_change.emit(current_page - 1);
-                }
-            } else if *local_page > 0 {
-                local_page.set(*local_page - 1);
-            }
-        })
-    };
-
-    let on_next_page = {
-        let local_page = local_page.clone();
-        let on_online_page_change = on_online_page_change.clone();
-        let online_paginated = *online_paginated;
-        Callback::from(move |_| {
-            if online_paginated {
-                if total_pages > 0 && current_page + 1 < total_pages {
-                    on_online_page_change.emit(current_page + 1);
-                }
-            } else {
-                local_page.set(*local_page + 1);
-            }
-        })
-    };
-
-    let on_jump_page = {
-        let local_page = local_page.clone();
-        let on_online_page_change = on_online_page_change.clone();
-        let online_paginated = *online_paginated;
-        Callback::from(move |target_page: usize| {
-            if total_pages == 0 {
-                return;
-            }
-            let max_page = total_pages.saturating_sub(1);
-            let clamped = target_page.min(max_page);
-            if online_paginated {
-                on_online_page_change.emit(clamped);
-            } else {
-                local_page.set(clamped);
             }
         })
     };
@@ -424,7 +395,7 @@ pub fn table(props: &TableProps) -> Html {
     let on_add_filter = {
         let filters = filters.clone();
         let available_filter_columns = available_filter_columns.clone();
-        let page = local_page.clone();
+        let page = page.clone();
         let active_filter_dropdown = active_filter_dropdown.clone();
         let show_add_filter_menu = show_add_filter_menu.clone();
         Callback::from(move |id: String| {
@@ -495,7 +466,6 @@ pub fn table(props: &TableProps) -> Html {
             { if *search || !filterable_columns.is_empty() {
                 let filters_enabled = !filterable_columns.is_empty();
                 let filters = filters.clone();
-                let page = local_page.clone();
                 let on_add_filter = on_add_filter.clone();
                 let on_clear_filters = {
                     let filters = filters.clone();
@@ -867,15 +837,7 @@ pub fn table(props: &TableProps) -> Html {
             { if *paginate {
                     html! {
                         <div style={pagination_style}>
-                            <PaginationControls
-                                page={current_page}
-                                total_pages={total_pages}
-                                on_prev={on_prev_page}
-                                on_next={on_next_page}
-                                on_jump={on_jump_page}
-                                classes={classes.clone()}
-                                texts={texts.clone()}
-                            />
+                            <PaginationControls page={current_page} {total_pages} on_page_change={on_page_change} classes={classes.clone()} texts={texts.clone()}/>
                         </div>
                     }
                 } else {
