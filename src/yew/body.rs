@@ -83,10 +83,10 @@ pub fn body(props: &TableBodyProps) -> Html {
                                 for col in columns {
                                     <td class={classes.body_cell} role="cell">
                                         {
-                                            if let Some(render) = &col.cell_render {
-                                                render.emit(row.clone())
+                                            if let Some(cell_render) = &col.cell_render {
+                                                cell_render.emit(row.clone())
                                             } else {
-                                                html! { row.get(col.id).unwrap_or(&"".to_string()) }
+                                                html! { { row.get(col.id).unwrap_or(&"".to_string()) } }
                                             }
                                         }
                                     </td>

@@ -77,6 +77,7 @@ Incorporating Table RS into your Yew application is easy. Follow these steps:
 | `loading`   | `bool`                                | Whether to show a loading state.                | `false`   |
 | `paginate`  | `bool`                                | Enables pagination UI.                          | `false`   |
 | `search`    | `bool`                                | Enables search input field.                     | `false`   |
+| `filterable_columns` | `HashMap<&'static str, FilterType>` | Enables column filters by mapping column IDs to filter types. | `{}` |
 | `classes`   | `TableClasses`                        | CSS class names for customization.              | See below |
 | `styles`    | `HashMap<&'static str, &'static str>` | Inline styles for different parts of the table. | `{}`      |
 | `texts`     | `TableTexts`                          | Customizable text labels for UI elements.       | See below |
@@ -103,6 +104,13 @@ Incorporating Table RS into your Yew application is easy. Follow these steps:
 | `tbody`             | `&'static str` | The `<tbody>` element.                 | `"tbody"`               |
 | `pagination`        | `&'static str` | Pagination controls wrapper.           | `"pagination-controls"` |
 | `search_input`      | `&'static str` | Class for the search input element.    | `"search-input"`        |
+| `filter_button`     | `&'static str` | Class for the + Filter button.         | `"filter-button"`       |
+| `filter_panel`      | `&'static str` | Class for the filter panel wrapper.    | `"filter-panel"`        |
+| `filter_row`        | `&'static str` | Class for each filter row.             | `"filter-row"`          |
+| `filter_select`     | `&'static str` | Class for filter column select.        | `"filter-select"`       |
+| `filter_operator`   | `&'static str` | Class for filter operator select.      | `"filter-operator"`     |
+| `filter_input`      | `&'static str` | Class for filter value input.          | `"filter-input"`        |
+| `filter_remove_button` | `&'static str` | Class for filter remove button.     | `"filter-remove-button"`|
 | `header_cell`       | `&'static str` | Class for table header cells (`<th>`). | `"th"`                  |
 | `body_cell`         | `&'static str` | Class for table body cells (`<td>`).   | `"td"`                  |
 | `row`               | `&'static str` | Class for rows (`<tr>`).               | `"tr"`                  |
@@ -153,6 +161,8 @@ Incorporating Table RS into your Yew application is easy. Follow these steps:
 
 - The `data` must match the `id` values defined in each `Column`.
 - The `search` prop enables input-based filtering across all columns.
+- Column filters are enabled by providing `filterable_columns`, and are applied before search.
+- Operators vary by filter type (string: contains/equals/starts/ends, number: =/!=/>/>=/</<=, bool: is/is not, plus is empty/is not empty).
 - Pagination is controlled using the `page_size` and `paginate` props.
 - Sorting is column-specific via `sortable = true` and `on_sort_column`.
 - All style classes can be customized via `TableClasses`.
