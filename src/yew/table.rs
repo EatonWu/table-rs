@@ -1,11 +1,11 @@
 use gloo_timers::callback::Timeout;
 use wasm_bindgen::JsCast;
+use web_sys::{Element, HtmlScriptElement, HtmlSelectElement};
 use yew::prelude::*;
 use yew_bootstrap::component::form::{FormControl, FormControlType, SelectOption};
 use yew_bootstrap::component::{Button, ButtonSize};
 use yew_bootstrap::util::Color;
 use yew_icons::{Icon, IconData};
-use web_sys::{Element, HtmlScriptElement, HtmlSelectElement};
 
 use crate::yew::body::TableBody;
 use crate::yew::controls::PaginationControls;
