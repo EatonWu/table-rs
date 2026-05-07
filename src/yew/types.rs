@@ -239,6 +239,22 @@ pub struct TableProps {
     #[prop_or(false)]
     pub paginate: bool,
 
+    /// Whether pagination is controlled by the caller instead of local rows.
+    #[prop_or(false)]
+    pub online_paginated: bool,
+
+    /// Current zero-based page when `online_paginated` is enabled.
+    #[prop_or(0)]
+    pub online_page: usize,
+
+    /// Total pages when `online_paginated` is enabled.
+    #[prop_or(1)]
+    pub online_total_pages: usize,
+
+    /// Callback fired with the requested zero-based page when `online_paginated` is enabled.
+    #[prop_or_default]
+    pub on_online_page_change: Callback<usize>,
+
     /// Whether to enable search functionality.
     #[prop_or(false)]
     pub search: bool,
